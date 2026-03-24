@@ -6,8 +6,8 @@ class Knoter < Formula
   head "https://github.com/hirenj/go-knoter.git", branch: "main"
 
   stable do
-    url "https://github.com/hirenj/go-knoter/archive/refs/tags/v0.1.0.tar.gz"
-    sha256 "PLACEHOLDER"
+    url "https://github.com/hirenj/go-knoter/archive/refs/tags/v0.0.4.tar.gz"
+    sha256 "82707cbf15627d006cba84327e6a571b7840e5b5d99b4d8be381545c577e13cc"
   end
 
   depends_on "go" => :build
