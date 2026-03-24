@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>knoter authentication</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 4em auto; text-align: center; color: #222; }
+    h2   { font-weight: normal; }
+    #code-box {
+      font-family: monospace; font-size: 1em;
+      background: #f4f4f4; border: 1px solid #ccc; border-radius: 6px;
+      padding: 0.8em 1em; margin: 1em 0;
+      word-break: break-all; text-align: left;
+    }
+    button {
+      padding: 0.5em 1.4em; font-size: 1em; cursor: pointer;
+      border: 1px solid #888; border-radius: 4px; background: #fff;
+    }
+    button:active { background: #e8e8e8; }
+    #status { margin-top: 0.8em; font-size: 0.9em; color: #555; }
+    #error  { color: #c00; }
+  </style>
+</head>
+<body>
+  <h2>knoter</h2>
+  <div id="main" style="display:none">
+    <p>Copy this code and paste it into the terminal:</p>
+    <div id="code-box"></div>
+    <button onclick="copyCode()">Copy</button>
+    <div id="status"></div>
+  </div>
+  <p id="error" style="display:none"></p>
+  <script>
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (code) {
+      document.getElementById('code-box').textContent = code;
+      document.getElementById('main').style.display = '';
+    } else {
+      const err = new URLSearchParams(window.location.search).get('error_description')
+               || new URLSearchParams(window.location.search).get('error')
+               || 'No code found in redirect URL.';
+      const el = document.getElementById('error');
+      el.textContent = err;
+      el.style.display = '';
+    }
+    function copyCode() {
+      navigator.clipboard.writeText(code).then(function() {
+        document.getElementById('status').textContent = 'Copied!';
+      });
+    }
+  </script>
+</body>
+</html>

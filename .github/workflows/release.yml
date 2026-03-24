@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}/${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: windows
+            arch: amd64
+          - os: windows
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build binaries
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: "0"
+        run: |
+          EXT=""
+          if [ "${{ matrix.os }}" = "windows" ]; then EXT=".exe"; fi
+          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+            -o knoter${EXT} ./cmd/knoter
+          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+            -o knoter-auth${EXT} ./cmd/knoter-auth
+
+      - name: Create archive
+        run: |
+          NAME="knoter-${{ matrix.os }}-${{ matrix.arch }}"
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            zip "${NAME}.zip" knoter.exe knoter-auth.exe
+          else
+            tar czf "${NAME}.tar.gz" knoter knoter-auth
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: knoter-${{ matrix.os }}-${{ matrix.arch }}
+          path: knoter-${{ matrix.os }}-${{ matrix.arch }}.*
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Compute SHA256 checksums
+        working-directory: dist
+        run: sha256sum *.tar.gz *.zip > checksums.txt
+
+      - name: Update Homebrew formula
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          FORMULA="Formula/knoter.rb"
+
+          update_sha() {
+            local platform="$1"
+            local file="dist/knoter-${platform}.tar.gz"
+            local sha
+            sha=$(sha256sum "$file" | awk '{print $1}')
+            sed -i "s/PLACEHOLDER_${platform//-/_}/${sha}/" "$FORMULA"
+          }
+
+          sed -i "s/version \".*\"/version \"${VERSION}\"/" "$FORMULA"
+          update_sha darwin-arm64
+          update_sha darwin-amd64
+          update_sha linux-arm64
+          update_sha linux-amd64
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+            Formula/knoter.rb
+          generate_release_notes: true
