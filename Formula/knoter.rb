@@ -7,22 +7,22 @@ class Knoter < Formula
   on_macos do
     on_arm do
       url "https://github.com/hirenj/go-knoter/releases/download/v#{version}/knoter-darwin-arm64.tar.gz"
-      sha256 "PLACEHOLDER_darwin_arm64"
+      sha256 "0400dd0004759043bb24e0a4b7ddf9b02c1c78f8471eae3b6b2ff23bc03d020b"
     end
     on_intel do
       url "https://github.com/hirenj/go-knoter/releases/download/v#{version}/knoter-darwin-amd64.tar.gz"
-      sha256 "PLACEHOLDER_darwin_amd64"
+      sha256 "0400dd0004759043bb24e0a4b7ddf9b02c1c78f8471eae3b6b2ff23bc03d020b"
     end
   end
 
   on_linux do
     on_arm do
       url "https://github.com/hirenj/go-knoter/releases/download/v#{version}/knoter-linux-arm64.tar.gz"
-      sha256 "PLACEHOLDER_linux_arm64"
+      sha256 "0400dd0004759043bb24e0a4b7ddf9b02c1c78f8471eae3b6b2ff23bc03d020b"
     end
     on_intel do
       url "https://github.com/hirenj/go-knoter/releases/download/v#{version}/knoter-linux-amd64.tar.gz"
-      sha256 "PLACEHOLDER_linux_amd64"
+      sha256 "0400dd0004759043bb24e0a4b7ddf9b02c1c78f8471eae3b6b2ff23bc03d020b"
     end
   end
 
