@@ -17,7 +17,12 @@ Two binaries:
 
 ```sh
 brew tap hirenj/go-knoter https://github.com/hirenj/go-knoter
+
+# Install latest stable release
 brew install knoter
+
+# Or install directly from main branch (before a release exists)
+brew install --HEAD knoter
 ```
 
 ### Build from source

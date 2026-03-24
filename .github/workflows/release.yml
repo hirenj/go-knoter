@@ -9,94 +9,81 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build ${{ matrix.os }}/${{ matrix.arch }}
+  release:
+    name: Publish release
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - os: darwin
-            arch: amd64
-          - os: darwin
-            arch: arm64
-          - os: linux
-            arch: amd64
-          - os: linux
-            arch: arm64
-          - os: windows
-            arch: amd64
-          - os: windows
-            arch: arm64
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need full history to push back to main
+          fetch-depth: 0
+          ref: main
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: Build binaries
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          CGO_ENABLED: "0"
+      - name: Build release archives
         run: |
-          EXT=""
-          if [ "${{ matrix.os }}" = "windows" ]; then EXT=".exe"; fi
-          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
-            -o knoter${EXT} ./cmd/knoter
-          go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
-            -o knoter-auth${EXT} ./cmd/knoter-auth
+          VERSION="${GITHUB_REF_NAME}"
+          mkdir -p dist
 
-      - name: Create archive
-        run: |
-          NAME="knoter-${{ matrix.os }}-${{ matrix.arch }}"
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            zip "${NAME}.zip" knoter.exe knoter-auth.exe
-          else
-            tar czf "${NAME}.tar.gz" knoter knoter-auth
-          fi
+          build() {
+            local os=$1 arch=$2
+            local ext=""
+            [ "$os" = "windows" ] && ext=".exe"
+            GOOS=$os GOARCH=$arch CGO_ENABLED=0 \
+              go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" \
+              -o dist/knoter-${os}-${arch}${ext} ./cmd/knoter
+            GOOS=$os GOARCH=$arch CGO_ENABLED=0 \
+              go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" \
+              -o dist/knoter-auth-${os}-${arch}${ext} ./cmd/knoter-auth
+          }
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: knoter-${{ matrix.os }}-${{ matrix.arch }}
-          path: knoter-${{ matrix.os }}-${{ matrix.arch }}.*
+          build darwin  amd64
+          build darwin  arm64
+          build linux   amd64
+          build linux   arm64
+          build windows amd64
+          build windows arm64
 
-  release:
-    name: Publish release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: Compute SHA256 checksums
-        working-directory: dist
-        run: sha256sum *.tar.gz *.zip > checksums.txt
+          cd dist
+          for pair in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
+            os=${pair%/*}; arch=${pair#*/}
+            cp knoter-${os}-${arch}       knoter
+            cp knoter-auth-${os}-${arch}  knoter-auth
+            tar czf knoter-${os}-${arch}.tar.gz knoter knoter-auth
+            rm knoter knoter-auth
+          done
+          for arch in amd64 arm64; do
+            cp knoter-windows-${arch}.exe       knoter.exe
+            cp knoter-auth-windows-${arch}.exe  knoter-auth.exe
+            zip knoter-windows-${arch}.zip knoter.exe knoter-auth.exe
+            rm knoter.exe knoter-auth.exe
+          done
+          sha256sum *.tar.gz *.zip > checksums.txt
 
       - name: Update Homebrew formula
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          FORMULA="Formula/knoter.rb"
+          VERSION="${GITHUB_REF_NAME}"
+          VERSION_NUM="${VERSION#v}"
+          TARBALL_URL="https://github.com/hirenj/go-knoter/archive/refs/tags/${VERSION}.tar.gz"
 
-          update_sha() {
-            local platform="$1"
-            local file="dist/knoter-${platform}.tar.gz"
-            local sha
-            sha=$(sha256sum "$file" | awk '{print $1}')
-            sed -i "s/PLACEHOLDER_${platform//-/_}/${sha}/" "$FORMULA"
-          }
+          # GitHub generates the tag tarball; download it to get the sha256
+          SHA=$(curl -sL "$TARBALL_URL" | sha256sum | awk '{print $1}')
 
-          sed -i "s/version \".*\"/version \"${VERSION}\"/" "$FORMULA"
-          update_sha darwin-arm64
-          update_sha darwin-amd64
-          update_sha linux-arm64
-          update_sha linux-amd64
+          sed -i \
+            -e "s|url \"https://github.com/hirenj/go-knoter/archive/refs/tags/.*\"|url \"${TARBALL_URL}\"|" \
+            -e "s|sha256 \".*\"|sha256 \"${SHA}\"|" \
+            Formula/knoter.rb
+
+      - name: Commit updated formula
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/knoter.rb
+          git commit -m "brew: update formula to ${GITHUB_REF_NAME}"
+          git push origin main
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -105,5 +92,4 @@ jobs:
             dist/*.tar.gz
             dist/*.zip
             dist/checksums.txt
-            Formula/knoter.rb
           generate_release_notes: true
