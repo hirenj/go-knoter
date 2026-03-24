@@ -1,4 +1,4 @@
-module github.com/CopenhagenCenterForGlycomics/knoter-go
+module github.com/hirenj/go-knoter
 
 go 1.21
 

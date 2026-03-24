@@ -18,7 +18,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/CopenhagenCenterForGlycomics/knoter-go/internal/onenote"
+	"github.com/hirenj/go-knoter/internal/onenote"
 )
 
 // imgRe matches <img ...src="..."...> (non-greedy, handles single and double quotes).

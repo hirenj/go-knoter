@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CopenhagenCenterForGlycomics/knoter-go/internal/auth"
-	htmlpkg "github.com/CopenhagenCenterForGlycomics/knoter-go/internal/html"
-	"github.com/CopenhagenCenterForGlycomics/knoter-go/internal/onenote"
+	"github.com/hirenj/go-knoter/internal/auth"
+	htmlpkg "github.com/hirenj/go-knoter/internal/html"
+	"github.com/hirenj/go-knoter/internal/onenote"
 )
 
 func main() {

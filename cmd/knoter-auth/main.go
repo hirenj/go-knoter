@@ -17,7 +17,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/CopenhagenCenterForGlycomics/knoter-go/internal/auth"
+	"github.com/hirenj/go-knoter/internal/auth"
 )
 
 func main() {

@@ -223,7 +223,7 @@ func (c *Client) createSection(notebookID, sectionName string) (string, error) {
 func (c *Client) SectionIDForSharePoint(sharepointURL, notebookName, sectionName string) (string, error) {
 	// SharePoint-hosted notebooks appear under /sites/{siteID}/onenote/...
 	// For now we fall back to the personal path; extend as needed.
-	return "", fmt.Errorf("SharePoint support not yet implemented in knoter-go")
+	return "", fmt.Errorf("SharePoint support not yet implemented in go-knoter")
 }
 
 // ---- Page operations -------------------------------------------------------
